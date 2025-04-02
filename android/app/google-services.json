@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "92964835784",
+    "project_id": "fernandovidal-be766",
+    "storage_bucket": "fernandovidal-be766.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:92964835784:android:3cfc5eccb4a1f29308f0fd",
+        "android_client_info": {
+          "package_name": "com.example.fernandovidal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAL8ACILSjncjaYk3l9aJZtQPfu89lir6E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
