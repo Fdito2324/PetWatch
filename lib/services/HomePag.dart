@@ -1,13 +1,16 @@
+// lib/services/home_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'map_screen.dart';
 import 'report_lost_dog_screen.dart';
 import 'search_lost_dog_screen.dart';
 import '../auth_screen.dart';
-import 'package:fernandovidal/services/user_profile_screen.dart';
-import 'package:fernandovidal/services/dashboard_screen.dart';
-import 'package:fernandovidal/services/my_reports_screen.dart';
-import 'package:fernandovidal/services/conversation_list_screen.dart'; 
+import 'user_profile_screen.dart';
+import 'dashboard_screen.dart';               // <- IMPORT AÑADIDO
+import 'my_reports_screen.dart';
+import 'conversation_list_screen.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -25,7 +28,7 @@ class HomePage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const ConversationListScreen(),
+                  builder: (_) => const ConversationListScreen(),
                 ),
               );
             },
@@ -62,12 +65,14 @@ class HomePage extends StatelessWidget {
                   const Text(
                     "Selecciona una opción:",
                     style: TextStyle(
-                      fontSize: 22, 
-                      fontWeight: FontWeight.bold, 
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 20),
+
+                  // MAPA
                   _buildMenuButton(
                     context,
                     "📍 Ver Mapa de Reportes",
@@ -75,6 +80,8 @@ class HomePage extends StatelessWidget {
                     Icons.map,
                     const MapScreen(),
                   ),
+
+                  // REPORTAR
                   _buildMenuButton(
                     context,
                     "🐾 Reportar un Perro Perdido",
@@ -82,6 +89,8 @@ class HomePage extends StatelessWidget {
                     Icons.pets,
                     const ReportLostDogScreen(),
                   ),
+
+                  // BUSCAR
                   _buildMenuButton(
                     context,
                     "🔍 Buscar un Perro Perdido",
@@ -89,6 +98,8 @@ class HomePage extends StatelessWidget {
                     Icons.search,
                     const SearchLostDogScreen(),
                   ),
+
+                  // PERFIL
                   _buildMenuButton(
                     context,
                     "👤 Perfil del Usuario",
@@ -96,13 +107,17 @@ class HomePage extends StatelessWidget {
                     Icons.person,
                     const UserProfileScreen(),
                   ),
+
+                  // DASHBOARD
                   _buildMenuButton(
                     context,
                     "📊 Dashboard",
                     Colors.purple,
                     Icons.dashboard,
-                    const DashboardScreen(),
+                    const DashboardScreen(),     // << Instancia CORRECTA
                   ),
+
+                  // MIS REPORTES
                   _buildMenuButton(
                     context,
                     "📜 Mis Reportes",
@@ -110,8 +125,11 @@ class HomePage extends StatelessWidget {
                     Icons.history,
                     const MyReportsScreen(),
                   ),
+
                   const SizedBox(height: 20),
                   const Divider(color: Colors.black26, thickness: 1),
+
+                  // CERRAR SESIÓN
                   _buildLogoutButton(context),
                   const SizedBox(height: 10),
                 ],
@@ -123,14 +141,20 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuButton(BuildContext context, String text, Color color, IconData icon, Widget screen) {
+  Widget _buildMenuButton(
+      BuildContext context,
+      String text,
+      Color color,
+      IconData icon,
+      Widget screen,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: ElevatedButton.icon(
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => screen),
+            MaterialPageRoute(builder: (_) => screen),
           );
         },
         icon: Icon(icon, size: 30),
@@ -139,7 +163,9 @@ class HomePage extends StatelessWidget {
           backgroundColor: color,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 15),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );
@@ -153,15 +179,17 @@ class HomePage extends StatelessWidget {
           await FirebaseAuth.instance.signOut();
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const AuthScreen()),
+            MaterialPageRoute(builder: (_) => const AuthScreen()),
           );
         },
         icon: const Icon(Icons.logout, size: 30, color: Colors.white),
-        label: const Text("Cerrar Sesión", style: TextStyle(fontSize: 18, color: Colors.white)),
+        label:
+            const Text("Cerrar Sesión", style: TextStyle(fontSize: 18, color: Colors.white)),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.grey,
           padding: const EdgeInsets.symmetric(vertical: 15),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
     );

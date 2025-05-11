@@ -1,8 +1,8 @@
 [
   {
     "origin": [
-      "http://localhost:60817/",
-      "http://127.0.0.1:60817"
+      "http://localhost:3721/",
+      "http://127.0.0.1:3721"
     ],
     "method": ["GET"],
     "maxAgeSeconds": 3600,

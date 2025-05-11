@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.fernandovidal"
 
-    compileSdk = 34 // ✅ Define un número específico
+    compileSdk = 35 // ✅ Define un número específico
 
     ndkVersion = "28.0.13004108"
 

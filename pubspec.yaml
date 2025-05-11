@@ -5,30 +5,42 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.7.0
+  sdk: ">=2.17.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
+
+  # Flutter & Firebase
   cupertino_icons: ^1.0.8
   firebase_core: ^3.12.0
   firebase_messaging: ^15.2.3
   firebase_analytics: ^11.4.3
   cloud_firestore: ^5.6.4
   firebase_auth: ^5.5.0
+  firebase_storage: ^12.4.3
+
+  # UI & utilities
   google_maps_flutter: ^2.5.0
   geolocator: ^13.0.2
-  google_maps_flutter_web: ^0.5.1+2
   image_picker: ^1.1.2
   file_picker: ^9.0.0
-  firebase_storage: ^12.4.3
   image: ^4.5.3
-  intl: ^0.20.2
+  intl: ^0.17.0
   cached_network_image: ^3.4.1
-  
 
+  # Charting library
+  charts_flutter: ^0.12.0
+  pie_chart: ^5.0.3
+
+  # Helpers
+  equatable: ^2.0.5
+  graphic: ^2.5.1
+graphic: ^0.3.2
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.3
