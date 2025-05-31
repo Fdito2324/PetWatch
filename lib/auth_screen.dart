@@ -19,6 +19,11 @@ class _AuthScreenState extends State<AuthScreen> {
   bool isLoading = false;
   bool isPasswordVisible = false;
 
+  final Color backgroundColor = const Color(0xFFE0F2F1); // Verde-agua claro
+  final Color primaryColor = const Color(0xFFFFA726); // Naranja vibrante
+  final Color accentColor = const Color(0xFF004D40); // Verde oscuro profundo
+  final Color buttonTextColor = Colors.white;
+
   Future<void> authenticate() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
@@ -44,9 +49,16 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (errorMessage == null) {
         mostrarMensaje('✅ ${isLogin ? 'Inicio de sesión' : 'Registro'} exitoso', context);
+
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          PageRouteBuilder(
+            transitionDuration: const Duration(milliseconds: 500),
+            pageBuilder: (_, __, ___) => HomePage(),
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
         );
       } else {
         mostrarMensaje(errorMessage, context);
@@ -73,176 +85,110 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  String _getErrorMessage(String errorCode) {
-    switch (errorCode) {
-      case 'user-not-found':
-        return '❌ El correo ingresado no está registrado.';
-      case 'wrong-password':
-        return '❌ La contraseña es incorrecta.';
-      case 'invalid-email':
-        return '❌ Formato de correo inválido.';
-      case 'weak-password':
-        return '⚠ La contraseña es demasiado débil.';
-      case 'email-already-in-use':
-        return '⚠ Este correo ya está en uso.';
-      default:
-        return '❌ Error desconocido.';
-    }
-  }
-
   void mostrarMensaje(String mensaje, BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(mensaje)),
     );
   }
 
-  @override
-  void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    nameController.dispose();
-    super.dispose();
+  InputDecoration customInputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Imagen de fondo
-          Positioned.fill(
-            child: Image.asset(
-              "assets/background.jpg",
-              fit: BoxFit.cover,
-            ),
-          ),
-          Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Card(
-                  elevation: 5,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Animación con AnimatedSwitcher
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 500),
-                          transitionBuilder: (widget, animation) =>
-                              ScaleTransition(scale: animation, child: widget),
-                          child: Text(
-                            isLogin ? 'Iniciar Sesión' : 'Crear Cuenta',
-                            key: ValueKey<bool>(isLogin),
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        // Campo de Nombre (Solo en registro)
-                        if (!isLogin)
-                          TextField(
-                            controller: nameController,
-                            decoration: InputDecoration(
-                              labelText: 'Nombre y Apellido',
-                              prefixIcon: const Icon(Icons.person),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                        if (!isLogin) const SizedBox(height: 15),
-                        // Campo de Correo Electrónico
-                        TextField(
-                          controller: emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            labelText: 'Correo Electrónico',
-                            prefixIcon: const Icon(Icons.email),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        // Campo de Contraseña con botón para mostrar/ocultar
-                        TextField(
-                          controller: passwordController,
-                          obscureText: !isPasswordVisible,
-                          decoration: InputDecoration(
-                            labelText: 'Contraseña',
-                            prefixIcon: const Icon(Icons.lock),
-                            suffixIcon: IconButton(
-                              icon: Icon(isPasswordVisible ? Icons.visibility : Icons.visibility_off),
-                              onPressed: () {
-                                setState(() {
-                                  isPasswordVisible = !isPasswordVisible;
-                                });
-                              },
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                        // Botón "¿Olvidaste tu contraseña?"
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: resetPassword,
-                            child: const Text(
-                              "¿Olvidaste tu contraseña?",
-                              style: TextStyle(color: Colors.blue),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        // Botón de iniciar sesión o registro
-                        isLoading
-                            ? const CircularProgressIndicator()
-                            : ElevatedButton(
-                                onPressed: authenticate,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blueAccent,
-                                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                                  textStyle: const TextStyle(fontSize: 18),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                ),
-                                child: Text(isLogin ? 'Iniciar Sesión' : 'Registrarse'),
-                              ),
-                        const SizedBox(height: 20),
-                        // Botón para alternar entre login y registro
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              isLogin = !isLogin;
-                            });
-                          },
-                          child: Text(isLogin
-                              ? '¿No tienes cuenta? Regístrate'
-                              : '¿Ya tienes cuenta? Inicia sesión'),
-                        ),
-                      ],
-                    ),
+      backgroundColor: backgroundColor,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/paw_logo.png',
+                width: 140,
+                height: 140,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                isLogin ? 'Bienvenido a PetWatch' : 'Crea tu cuenta',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: accentColor,
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (!isLogin)
+                TextField(
+                  controller: nameController,
+                  decoration: customInputDecoration('Nombre completo'),
+                ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: emailController,
+                decoration: customInputDecoration('Correo electrónico'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: passwordController,
+                obscureText: !isPasswordVisible,
+                decoration: customInputDecoration('Contraseña').copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () {
+                      setState(() {
+                        isPasswordVisible = !isPasswordVisible;
+                      });
+                    },
                   ),
                 ),
               ),
-            ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: buttonTextColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                onPressed: isLoading ? null : authenticate,
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text(isLogin ? 'Iniciar Sesión' : 'Registrarse'),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: isLoading ? null : resetPassword,
+                child: const Text("¿Olvidaste tu contraseña?"),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    isLogin = !isLogin;
+                  });
+                },
+                child: Text(
+                  isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión',
+                  style: TextStyle(color: accentColor),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

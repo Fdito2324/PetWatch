@@ -104,12 +104,38 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     if (_user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Perfil del Usuario")),
+        appBar: AppBar(
+          title: const Text(
+            "Perfil del Usuario",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+              color: Colors.white,
+            ),
+          ),
+          centerTitle: true,
+          backgroundColor: Colors.teal,
+          elevation: 4,
+        ),
         body: const Center(child: Text("No se encontró el usuario.")),
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text("Perfil del Usuario")),
+      appBar: AppBar(
+        title: const Text(
+          "Perfil del Usuario",
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.2,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.teal,
+        elevation: 4,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -136,27 +162,49 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             const SizedBox(height: 20),
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: "Nombre",
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.grey[100],
+                prefixIcon: const Icon(Icons.person_outline),
               ),
             ),
             const SizedBox(height: 10),
-  
             TextField(
               controller: TextEditingController(text: _user!.email),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: "Correo",
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.grey[100],
+                prefixIcon: const Icon(Icons.email_outlined),
               ),
               readOnly: true,
             ),
             const SizedBox(height: 20),
             _isLoading
                 ? const CircularProgressIndicator()
-                : ElevatedButton(
+                : ElevatedButton.icon(
                     onPressed: _saveProfile,
-                    child: const Text("Guardar cambios"),
+                    icon: const Icon(Icons.save_alt_rounded),
+                    label: const Text(
+                      "Guardar cambios",
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 3,
+                    ),
                   ),
           ],
         ),

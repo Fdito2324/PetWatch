@@ -1,89 +1,137 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'chat_screen.dart';
 
-class NewConversationScreen extends StatefulWidget {
+class NewConversationScreen extends StatelessWidget {
   const NewConversationScreen({Key? key}) : super(key: key);
 
-  @override
-  State<NewConversationScreen> createState() => _NewConversationScreenState();
-}
+  Future<void> _startConversation(
+    BuildContext context,
+    String otherUserId,
+    String otherUserName,
+  ) async {
+    print("Iniciando conversación con $otherUserName ($otherUserId)");
 
-class _NewConversationScreenState extends State<NewConversationScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  String generateConversationId(String uid1, String uid2) {
-    List<String> uids = [uid1, uid2];
-    uids.sort();
-    return uids.join("_");
-  }
-
-  Future<void> _startConversation() async {
-    String otherEmail = _emailController.text.trim();
-    if (otherEmail.isEmpty) return;
-    String currentUserId = _auth.currentUser!.uid;
-
-    
-    QuerySnapshot userSnapshot = await _firestore
-        .collection("users")
-        .where("email", isEqualTo: otherEmail)
-        .limit(1)
-        .get();
-
-    if (userSnapshot.docs.isEmpty) {
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No se encontró un usuario con ese correo.")),
-      );
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      print("Error: Usuario no autenticado");
       return;
     }
 
+    final conversationRef = FirebaseFirestore.instance.collection('conversations');
 
-    String otherUserId = (userSnapshot.docs.first.data() as Map<String, dynamic>)["uid"];
-    String conversationId = generateConversationId(currentUserId, otherUserId);
+    try {
+      final existing = await conversationRef
+          .where('participants', arrayContains: currentUser.uid)
+          .get();
 
-    DocumentReference chatDoc =
-        _firestore.collection("chats").doc(conversationId);
-    DocumentSnapshot snapshot = await chatDoc.get();
-    if (!snapshot.exists) {
-      await chatDoc.set({
-        "participants": [currentUserId, otherUserId],
-        "createdAt": FieldValue.serverTimestamp(),
+      for (final doc in existing.docs) {
+        final participants = doc['participants'];
+        if (participants.contains(otherUserId)) {
+          print("Conversación existente encontrada: ${doc.id}");
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatScreen(
+                conversationId: doc.id,
+                otherUserName: otherUserName,
+              ),
+            ),
+          );
+          return;
+        }
+      }
+
+      // Crear nueva conversación
+      final newDoc = await conversationRef.add({
+        'participants': [currentUser.uid, otherUserId],
+        'names': {
+          currentUser.uid: currentUser.displayName ?? 'Tú',
+          otherUserId: otherUserName,
+        },
+        'lastMessage': '',
+        'lastTimestamp': FieldValue.serverTimestamp(),
       });
+
+      print("Nueva conversación creada: ${newDoc.id}");
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(
+            conversationId: newDoc.id,
+            otherUserName: otherUserName,
+          ),
+        ),
+      );
+    } catch (e) {
+      print("Error al iniciar conversación: $e");
     }
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChatScreen(conversationId: conversationId),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Nueva Conversación")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: "Correo del otro usuario",
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _startConversation,
-              child: const Text("Iniciar Chat"),
-            ),
-          ],
-        ),
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF009688),
+        title: const Text("Nueva Conversación"),
+        centerTitle: true,
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('users').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return const Center(child: Text("Error al cargar los usuarios."));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("No hay usuarios registrados."));
+          }
+
+          final users = snapshot.data!.docs.where((doc) => doc.id != currentUser?.uid).toList();
+
+          if (users.isEmpty) {
+            return const Center(child: Text("No hay otros usuarios disponibles."));
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: users.length,
+            itemBuilder: (context, index) {
+              final user = users[index];
+              final data = user.data() as Map<String, dynamic>;
+              final userName = data['nombre'] ?? 'Sin nombre';
+
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
+                  onTap: () => _startConversation(context, user.id, userName),
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.teal,
+                    child: Text(
+                      userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  title: Text(
+                    userName,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  trailing: const Icon(Icons.chat_bubble_outline),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

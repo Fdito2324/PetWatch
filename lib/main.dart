@@ -3,11 +3,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
 import 'auth_screen.dart';
-
+import 'package:fernandovidal/services/new_conversation_screen.dart'; // ✅ NUEVA IMPORTACIÓN
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
   print("Mensaje en background: ${message.messageId}");
 }
 
@@ -29,9 +28,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
   await _requestNotificationPermission();
 
   runApp(const MyApp());
@@ -55,13 +52,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _initializeFCM() async {
-
     String? token = await _messaging.getToken();
     setState(() {
       _token = token;
     });
     print("Token FCM: $_token");
-
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print("Mensaje recibido en primer plano: ${message.messageId}");
@@ -74,10 +69,8 @@ class _MyAppState extends State<MyApp> {
       }
     });
 
-
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print("La notificación abrió la app: ${message.messageId}");
-
     });
   }
 
@@ -87,6 +80,9 @@ class _MyAppState extends State<MyApp> {
       title: 'PetWatch',
       debugShowCheckedModeBanner: false,
       home: const AuthScreen(),
+      routes: {
+        '/new_conversation': (_) => const NewConversationScreen(), // ✅ NUEVA RUTA
+      },
     );
   }
 }

@@ -36,6 +36,7 @@ dependencies:
   # Helpers
   equatable: ^2.0.5
   graphic: ^2.5.1
+  provider: ^6.1.5
 graphic: ^0.3.2
 dev_dependencies:
   flutter_test:
@@ -54,6 +55,7 @@ flutter:
     - assets/default_avatar1.jpg
     - assets/petwatch_background.jpg
     - assets/default_profile.png
+    - assets/paw_logo.png
 
 flutter_icons:
   android: true

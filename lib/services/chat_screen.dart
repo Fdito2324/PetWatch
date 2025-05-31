@@ -1,99 +1,98 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class ChatScreen extends StatefulWidget {
   final String conversationId;
-  const ChatScreen({Key? key, required this.conversationId}) : super(key: key);
+  final String otherUserName;
+
+  const ChatScreen({
+    Key? key,
+    required this.conversationId,
+    required this.otherUserName,
+  }) : super(key: key);
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  _ChatScreenState createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<void> _sendMessage() async {
-    String text = _messageController.text.trim();
+    final text = _messageController.text.trim();
     if (text.isEmpty) return;
-    User? user = _auth.currentUser;
-    if (user == null) return;
-    await _firestore
-        .collection('chats')
+
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    await FirebaseFirestore.instance
+        .collection('conversations')
         .doc(widget.conversationId)
         .collection('messages')
         .add({
-      'senderId': user.uid,
+      'senderId': currentUser.uid,
       'text': text,
       'timestamp': FieldValue.serverTimestamp(),
     });
-    _messageController.clear();
-  }
 
-  String _formatTimestamp(Timestamp? timestamp) {
-    if (timestamp == null) return "";
-    DateTime date = timestamp.toDate();
-    return DateFormat('dd/MM/yyyy HH:mm').format(date);
+    _messageController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = _auth.currentUser;
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text("Chat"),
+        backgroundColor: const Color(0xFF009688),
+        title: Text(widget.otherUserName),
+        centerTitle: true,
       ),
       body: Column(
         children: [
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _firestore
-                  .collection('chats')
+              stream: FirebaseFirestore.instance
+                  .collection('conversations')
                   .doc(widget.conversationId)
                   .collection('messages')
-                  .orderBy('timestamp', descending: false)
+                  .orderBy('timestamp')
                   .snapshots(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text("No hay mensajes aún."));
                 }
                 final messages = snapshot.data!.docs;
                 return ListView.builder(
+                  padding: const EdgeInsets.all(12),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    Map<String, dynamic> messageData =
-                        messages[index].data() as Map<String, dynamic>;
-                    bool isMe =
-                        messageData['senderId'] == _auth.currentUser?.uid;
-                    return ListTile(
-                      title: Align(
-                        alignment:
-                            isMe ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isMe ? Colors.blueAccent : Colors.grey[300],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            messageData['text'] ?? "",
-                            style: TextStyle(
-                                color:
-                                    isMe ? Colors.white : Colors.black87),
+                    final data = messages[index].data() as Map<String, dynamic>;
+                    final isMe = data['senderId'] == currentUser?.uid;
+
+                    return Align(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isMe ? Colors.teal.shade400 : Colors.grey.shade300,
+                          borderRadius: BorderRadius.only(
+                            topLeft: const Radius.circular(16),
+                            topRight: const Radius.circular(16),
+                            bottomLeft: Radius.circular(isMe ? 16 : 0),
+                            bottomRight: Radius.circular(isMe ? 0 : 16),
                           ),
                         ),
-                      ),
-                      subtitle: Align(
-                        alignment:
-                            isMe ? Alignment.centerRight : Alignment.centerLeft,
                         child: Text(
-                          _formatTimestamp(messageData['timestamp']),
-                          style: const TextStyle(fontSize: 10),
+                          data['text'] ?? '',
+                          style: TextStyle(
+                            color: isMe ? Colors.white : Colors.black,
+                            fontSize: 15,
+                          ),
                         ),
                       ),
                     );
@@ -103,25 +102,39 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _messageController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: "Escribe un mensaje...",
+                      filled: true,
+                      fillColor: const Color(0xFFF0F0F0),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
+                const SizedBox(width: 8),
+                ElevatedButton(
                   onPressed: _sendMessage,
-                )
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    backgroundColor: Colors.teal,
+                    padding: const EdgeInsets.all(12),
+                  ),
+                  child: const Icon(Icons.send, color: Colors.white),
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

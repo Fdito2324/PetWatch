@@ -21,7 +21,7 @@ class _ReportLostDogScreenState extends State<ReportLostDogScreen> {
   final TextEditingController detailsController = TextEditingController();
 
   Position? _currentPosition;
-  List<Uint8List> _selectedImages = []; 
+  List<Uint8List> _selectedImages = [];
   bool _isUploading = false;
 
   @override
@@ -36,9 +36,7 @@ class _ReportLostDogScreenState extends State<ReportLostDogScreen> {
   Future<void> _getCurrentLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        throw Exception("❌ Servicio de ubicación deshabilitado.");
-      }
+      if (!serviceEnabled) throw Exception("❌ Servicio de ubicación deshabilitado.");
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -47,78 +45,43 @@ class _ReportLostDogScreenState extends State<ReportLostDogScreen> {
         }
       }
       Position position = await Geolocator.getCurrentPosition();
-      setState(() {
-        _currentPosition = position;
-      });
-      print("📍 Ubicación obtenida: $_currentPosition");
+      setState(() => _currentPosition = position);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Ubicación obtenida: (${position.latitude}, ${position.longitude})"),
-          duration: const Duration(seconds: 3),
-        ),
+        SnackBar(content: Text('Ubicación obtenida: ${position.latitude}, ${position.longitude}')),
       );
     } catch (e) {
-      print("❌ Error obteniendo la ubicación: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
   Future<void> _pickImages() async {
-    final ImagePicker picker = ImagePicker();
-    
-    final List<XFile>? pickedFiles = await picker.pickMultiImage();
+    final picker = ImagePicker();
+    final pickedFiles = await picker.pickMultiImage();
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
-      List<Uint8List> images = [];
-      for (var file in pickedFiles) {
-        images.add(await file.readAsBytes());
-      }
-      setState(() {
-        _selectedImages.addAll(images);
-      });
-    }
-  }
-
-  Future<List<String>> _uploadImages() async {
-    List<String> imageUrls = [];
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) throw Exception("⚠ Debes iniciar sesión para reportar.");
-    
-    for (int i = 0; i < _selectedImages.length; i++) {
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child("lost_dogs/${DateTime.now().millisecondsSinceEpoch}_$i.jpg");
-      final uploadTask = ref.putData(_selectedImages[i], SettableMetadata(contentType: "image/jpeg"));
-      final snapshot = await uploadTask.whenComplete(() {});
-      if (snapshot.state == TaskState.success) {
-        String downloadUrl = await ref.getDownloadURL();
-        imageUrls.add(downloadUrl);
-      } else {
-        throw Exception("❌ Error al subir la imagen número $i.");
-      }
-    }
-    return imageUrls;
-  }
-
-  Future<void> _submitReport() async {
-    if (_currentPosition == null || _selectedImages.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("⚠ Debes agregar al menos una imagen y obtener la ubicación.")),
+      final filesData = await Future.wait(
+        pickedFiles.map((file) => file.readAsBytes()),
       );
-      return;
+      setState(() => _selectedImages.addAll(filesData));
     }
-    setState(() {
-      _isUploading = true;
-    });
+  }
+
+  Future<void> _uploadReport() async {
+    if (_isUploading) return;
+    setState(() => _isUploading = true);
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception("⚠ Debes iniciar sesión para reportar.");
+      if (user == null || _currentPosition == null) throw Exception("Falta información para enviar el reporte.");
+
+      final reportRef = FirebaseFirestore.instance.collection('lost_dogs').doc();
+      final imageUrls = <String>[];
+
+      for (var i = 0; i < _selectedImages.length; i++) {
+        final ref = FirebaseStorage.instance.ref().child('lost_dogs/${reportRef.id}_$i.jpg');
+        await ref.putData(_selectedImages[i]);
+        imageUrls.add(await ref.getDownloadURL());
       }
-     
-      List<String> imageUrls = await _uploadImages();
-      await FirebaseFirestore.instance.collection('lost_dogs').add({
+
+      await reportRef.set({
         'userId': user.uid,
         'name': nameController.text,
         'breed': breedController.text,
@@ -126,96 +89,91 @@ class _ReportLostDogScreenState extends State<ReportLostDogScreen> {
         'details': detailsController.text,
         'latitude': _currentPosition!.latitude,
         'longitude': _currentPosition!.longitude,
-        'imageUrls': imageUrls, 
-        'found': false,
+        'images': imageUrls,
         'timestamp': FieldValue.serverTimestamp(),
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Reporte enviado con éxito.")),
-      );
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Reporte enviado exitosamente.')));
       Navigator.pop(context);
     } catch (e) {
-      print("❌ Error al enviar reporte: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error al enviar reporte: ${e.toString()}")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     } finally {
-      setState(() {
-        _isUploading = false;
-      });
+      setState(() => _isUploading = false);
     }
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Reportar Perro Perdido 🐶")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: "Nombre"),
+      backgroundColor: Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: Color(0xFF009688),
+        title: const Text('Reportar Perro Perdido'),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildTextField('Nombre del perro', nameController),
+            _buildTextField('Raza', breedController),
+            _buildTextField('Color', colorController),
+            _buildTextField('Detalles adicionales', detailsController),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _getCurrentLocation,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF009688),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              TextField(
-                controller: breedController,
-                decoration: const InputDecoration(labelText: "Raza"),
+              icon: const Icon(Icons.location_on),
+              label: const Text('Obtener ubicación'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _pickImages,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal.shade700,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              TextField(
-                controller: colorController,
-                decoration: const InputDecoration(labelText: "Color"),
+              icon: const Icon(Icons.image),
+              label: const Text('Seleccionar imágenes'),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              children: _selectedImages.map((img) => ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.memory(img, width: 80, height: 80, fit: BoxFit.cover),
+              )).toList(),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _isUploading ? null : _uploadReport,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.shade700,
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              TextField(
-                controller: detailsController,
-                decoration: const InputDecoration(labelText: "Detalles"),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: _pickImages,
-                    child: const Text("📷 Agregar Imágenes"),
-                  ),
-                  ElevatedButton(
-                    onPressed: _getCurrentLocation,
-                    child: const Text("📍 Obtener Ubicación"),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              // Mostrar miniaturas de las imágenes seleccionadas
-              _selectedImages.isNotEmpty
-                  ? SizedBox(
-                      height: 100,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _selectedImages.length,
-                        itemBuilder: (context, index) {
-                          return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 5),
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                            ),
-                            child: Image.memory(_selectedImages[index], fit: BoxFit.cover),
-                          );
-                        },
-                      ),
-                    )
-                  : Container(),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: _isUploading ? null : _submitReport,
-                child: _isUploading
-                    ? const CircularProgressIndicator()
-                    : const Text("📤 Enviar Reporte"),
-              ),
-            ],
-          ),
+              icon: const Icon(Icons.send),
+              label: Text(_isUploading ? 'Enviando...' : 'Enviar reporte'),
+            ),
+          ],
         ),
       ),
     );

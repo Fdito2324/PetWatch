@@ -1,11 +1,11 @@
 [
   {
     "origin": [
-      "http://localhost:3721/",
-      "http://127.0.0.1:3721"
+      "http://localhost:17725/",
+      "http://127.0.0.1:17725"
     ],
     "method": ["GET"],
     "maxAgeSeconds": 3600,
     "responseHeader": ["Content-Type"]
   }
-]
+] 

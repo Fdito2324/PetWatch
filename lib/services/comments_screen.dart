@@ -60,7 +60,12 @@ class _CommentsScreenState extends State<CommentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Comentarios")),
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF009688),
+        title: const Text("Comentarios"),
+        centerTitle: true,
+      ),
       body: Column(
         children: [
           Expanded(
@@ -72,25 +77,58 @@ class _CommentsScreenState extends State<CommentsScreen> {
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text("No hay comentarios."));
                 }
                 final comments = snapshot.data!.docs;
                 return ListView.builder(
+                  padding: const EdgeInsets.all(12),
                   itemCount: comments.length,
                   itemBuilder: (context, index) {
-                    var commentData = comments[index].data() as Map<String, dynamic>;
-                    return ListTile(
-                      title: Text(commentData['comment'] ?? ""),
-                      subtitle: Text(
-                        "${commentData['userName'] ?? 'Anónimo'} - ${_formatTimestamp(commentData['timestamp'])} - Likes: ${commentData['likes'] ?? 0}",
+                    final comment = comments[index];
+                    final data = comment.data() as Map<String, dynamic>;
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.thumb_up),
-                        onPressed: () => _likeComment(comments[index].id),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              data['userName'] ?? 'Anónimo',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(data['comment'] ?? ''),
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatTimestamp(data['timestamp']),
+                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                ),
+                                Row(
+                                  children: [
+                                    Text('${data['likes'] ?? 0}'),
+                                    IconButton(
+                                      onPressed: () => _likeComment(comment.id),
+                                      icon: const Icon(Icons.favorite_border),
+                                      color: Colors.red,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            )
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -98,26 +136,45 @@ class _CommentsScreenState extends State<CommentsScreen> {
               },
             ),
           ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: const Border(top: BorderSide(color: Colors.grey, width: 0.2)),
+              boxShadow: [
+                BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, -2)),
+              ],
+            ),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _commentController,
-                    decoration: const InputDecoration(
-                      hintText: "Agrega un comentario...",
+                    decoration: InputDecoration(
+                      hintText: "Escribe un comentario...",
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      filled: true,
+                      fillColor: const Color(0xFFF5F5F5),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
+                const SizedBox(width: 8),
+                ElevatedButton(
                   onPressed: _addComment,
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(12),
+                    backgroundColor: Colors.teal,
+                  ),
+                  child: const Icon(Icons.send, color: Colors.white),
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
